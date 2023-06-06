@@ -13,6 +13,7 @@ impl Visitor {
         return match *node {
             Num(val) => val,
             BinOp(lhs, op, rhs) => self.visit_binop(lhs, op, rhs),
+            UnaryOp(op, rhs) => self.visit_unaryop(op, rhs),
         };
     }
 
@@ -27,6 +28,13 @@ impl Visitor {
             _ => panic!("Unrecognized operation: {}", op),
         };
     }
+    fn visit_unaryop(&mut self, op: Token, rhs: Box<Node>) -> i32 {
+        match op {
+            Plus => self.visit(rhs),
+            Minus => -self.visit(rhs),
+            _ => panic!("Unexpected unary operator {}", op),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -36,7 +44,7 @@ mod tests {
 
     #[test]
     fn test_visitor() {
-        let text = "3 + 21 * 1 - 7 * 2 - (4 + 6)";
+        let text = "3 + 21 * 1 + - 7 * 2 - (4 + 6)";
         let mut p = Parser::new(text.into());
         let node = p.parse();
         let mut v = Visitor::new();

@@ -5,6 +5,7 @@ use std::fmt::Display;
 pub enum Node {
     Num(i32),
     BinOp(Box<Node>, Token, Box<Node>),
+    UnaryOp(Token, Box<Node>),
 }
 
 impl Display for Node {

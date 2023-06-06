@@ -31,6 +31,10 @@ impl Parser {
     fn factor(&mut self) -> Box<Node> {
         let ct = self.get_current_token();
         return match ct {
+            Plus | Minus => {
+                self.consume(&ct);
+                Box::new(Node::UnaryOp(ct, self.factor()))
+            }
             IntConst(_) => {
                 self.consume(&ct);
                 Box::new(Node::Num(get_int(ct)))
@@ -89,7 +93,7 @@ mod test {
 
     #[test]
     fn test_parse() {
-        let text = "3 + 21 * 1 - 7 * 2 - (4 + 6)";
+        let text = "3 + 21 * 1 + - 7 * 2 - (4 + 6)";
         let mut p = Parser::new(text.into());
         let actual = p.parse();
 
@@ -105,9 +109,9 @@ mod test {
         ));
         node = Box::new(Node::BinOp(
             node,
-            Minus,
+            Plus,
             Box::new(Node::BinOp(
-                Box::new(Node::Num(7)),
+                Box::new(Node::UnaryOp(Minus, Box::new(Node::Num(7)))),
                 Multi,
                 Box::new(Node::Num(2)),
             )),
