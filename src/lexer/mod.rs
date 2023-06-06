@@ -16,6 +16,9 @@ impl Lexer {
     pub fn new(text: String) -> Self {
         let chars: Vec<char> = text.chars().collect();
         let len = chars.len();
+        if len == 0 {
+            panic!("Input text is empty");
+        }
         let cur_ch = chars[0];
         Lexer {
             text: chars,
@@ -123,5 +126,12 @@ mod tests {
         assert_eq!(l.get_next_token(), Multi);
         assert_eq!(l.get_next_token(), Div);
         assert_eq!(l.get_next_token(), EOF);
+    }
+
+    #[test]
+    #[should_panic]
+    fn empty_text() {
+        let text = "";
+        let _ = Lexer::new(text.into());
     }
 }

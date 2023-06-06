@@ -41,7 +41,7 @@ impl Parser {
                 self.consume(&RParan);
                 node
             }
-            _ => panic!("Unexpected term {}", ct),
+            _ => panic!("Unexpected factor {}", ct),
         };
     }
     fn term(&mut self) -> Box<Node> {
@@ -122,5 +122,13 @@ mod test {
             )),
         ));
         assert_eq!(node, actual);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_empty() {
+        let text = "";
+        let mut p = Parser::new(text.into());
+        let _ = p.parse();
     }
 }
