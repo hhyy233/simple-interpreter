@@ -2,6 +2,8 @@ use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
+    Begin,
+    End,
     Start,
     Integer,
     IntConst(String),
@@ -12,6 +14,8 @@ pub enum Token {
     Multi,
     Div,
     Assign,
+    Semi,
+    Dot,
     LParan,
     RParan,
     EOF,

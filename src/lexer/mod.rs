@@ -1,8 +1,14 @@
 pub mod token;
+use phf::phf_map;
 pub use token::Token;
 use token::Token::*;
 
 const RADIX: u32 = 10;
+
+static RESERVED_KEYWORDS: phf::Map<&'static str, Token> = phf_map! {
+    "BEGIN" => Begin,
+    "END" => End,
+};
 
 #[derive(Debug)]
 pub struct Lexer {
@@ -35,6 +41,14 @@ impl Lexer {
             self.cur_ch = Some(self.text[self.pos])
         }
     }
+    fn peek(&mut self) -> Option<char> {
+        let pos = self.pos + 1;
+        if pos > self.len - 1 {
+            return None;
+        } else {
+            return Some(self.text[pos]);
+        }
+    }
     fn skip_whitespace(&mut self) {
         while self.cur_ch != None && self.cur_ch.unwrap().is_whitespace() {
             self.advance()
@@ -65,7 +79,10 @@ impl Lexer {
             id.push(self.cur_ch.unwrap());
             self.advance();
         }
-        ID(id)
+        RESERVED_KEYWORDS
+            .get(id.as_str())
+            .cloned()
+            .unwrap_or(ID(id))
     }
     pub fn get_next_token(&mut self) -> Token {
         while self.cur_ch != None {
@@ -76,6 +93,19 @@ impl Lexer {
                 }
                 char if char.is_digit(RADIX) => self.number(),
                 char if char.is_alphabetic() => self.id(),
+                ':' if self.peek() == Some('=') => {
+                    self.advance();
+                    self.advance();
+                    Assign
+                }
+                ';' => {
+                    self.advance();
+                    Semi
+                }
+                '.' => {
+                    self.advance();
+                    Dot
+                }
                 '+' => {
                     self.advance();
                     Plus
@@ -113,7 +143,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn get_all_tokens() {
+    fn test_tokens() {
         let text = " 311 eee 3.33 ()+-*/".to_string();
         let mut l = Lexer::new(text);
         assert_eq!(l.get_next_token(), IntConst("311".into()));
@@ -133,5 +163,28 @@ mod tests {
     fn empty_text() {
         let text = "";
         let _ = Lexer::new(text.into());
+    }
+
+    #[test]
+    fn test_reserved_key() {
+        let text = "BEGIN END".to_string();
+        let mut l = Lexer::new(text);
+        assert_eq!(l.get_next_token(), Begin);
+        assert_eq!(l.get_next_token(), End);
+        assert_eq!(l.get_next_token(), EOF);
+    }
+
+    #[test]
+    fn test_statement() {
+        let text = "BEGIN a := 2; END.".to_string();
+        let mut l = Lexer::new(text);
+        assert_eq!(l.get_next_token(), Begin);
+        assert_eq!(l.get_next_token(), ID("a".into()));
+        assert_eq!(l.get_next_token(), Assign);
+        assert_eq!(l.get_next_token(), IntConst("2".into()));
+        assert_eq!(l.get_next_token(), Semi);
+        assert_eq!(l.get_next_token(), End);
+        assert_eq!(l.get_next_token(), Dot);
+        assert_eq!(l.get_next_token(), EOF);
     }
 }

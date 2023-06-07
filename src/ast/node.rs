@@ -6,6 +6,10 @@ pub enum Node {
     Num(i32),
     BinOp(Box<Node>, Token, Box<Node>),
     UnaryOp(Token, Box<Node>),
+    Assign(Box<Node>, Token, Box<Node>),
+    Var(Token),
+    Compound(Vec<Box<Node>>),
+    NoOp,
 }
 
 impl Display for Node {
