@@ -1,11 +1,14 @@
 use std::fmt::Display;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub enum Token {
+    Program,
+    Var,
     Begin,
     End,
     Start,
     Integer,
+    Real,
     IntConst(String),
     RealConst(String),
     ID(String),
@@ -13,8 +16,11 @@ pub enum Token {
     Minus,
     Multi,
     Div,
+    FloatDiv,
     Assign,
     Semi,
+    Colon,
+    Comma,
     Dot,
     LParan,
     RParan,

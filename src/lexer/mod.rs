@@ -6,6 +6,11 @@ use token::Token::*;
 const RADIX: u32 = 10;
 
 static RESERVED_KEYWORDS: phf::Map<&'static str, Token> = phf_map! {
+    "PROGRAM" => Program,
+    "VAR" => Var,
+    "INTEGER" => Integer,
+    "REAL" => Real,
+    "DIV" => Div,
     "BEGIN" => Begin,
     "END" => End,
 };
@@ -54,6 +59,12 @@ impl Lexer {
             self.advance()
         }
     }
+    fn skip_comments(&mut self) {
+        while self.cur_ch != None && self.cur_ch != Some('}') {
+            self.advance();
+        }
+        self.advance(); // consume the closing curly brace
+    }
     fn number(&mut self) -> Token {
         let mut digits = String::new();
         while self.cur_ch != None && self.cur_ch.unwrap().is_digit(RADIX) {
@@ -93,10 +104,19 @@ impl Lexer {
                 }
                 char if char.is_digit(RADIX) => self.number(),
                 char if char.is_alphabetic() => self.id(),
+                '{' => {
+                    self.advance();
+                    self.skip_comments();
+                    continue;
+                }
                 ':' if self.peek() == Some('=') => {
                     self.advance();
                     self.advance();
                     Assign
+                }
+                ':' => {
+                    self.advance();
+                    Colon
                 }
                 ';' => {
                     self.advance();
@@ -105,6 +125,10 @@ impl Lexer {
                 '.' => {
                     self.advance();
                     Dot
+                }
+                ',' => {
+                    self.advance();
+                    Comma
                 }
                 '+' => {
                     self.advance();
@@ -120,7 +144,7 @@ impl Lexer {
                 }
                 '/' => {
                     self.advance();
-                    Div
+                    FloatDiv
                 }
                 '(' => {
                     self.advance();
@@ -130,7 +154,6 @@ impl Lexer {
                     self.advance();
                     RParan
                 }
-                char if char.is_alphabetic() => self.id(),
                 unknown => panic!("Unknown token found: {}", unknown),
             };
         }
@@ -144,7 +167,7 @@ mod tests {
 
     #[test]
     fn test_tokens() {
-        let text = " 311 eee 3.33 ()+-*/".to_string();
+        let text = " 311 eee 3.33 ()+-*/ DIV".to_string();
         let mut l = Lexer::new(text);
         assert_eq!(l.get_next_token(), IntConst("311".into()));
         assert_eq!(l.get_next_token(), ID("eee".into()));
@@ -154,6 +177,7 @@ mod tests {
         assert_eq!(l.get_next_token(), Plus);
         assert_eq!(l.get_next_token(), Minus);
         assert_eq!(l.get_next_token(), Multi);
+        assert_eq!(l.get_next_token(), FloatDiv);
         assert_eq!(l.get_next_token(), Div);
         assert_eq!(l.get_next_token(), EOF);
     }

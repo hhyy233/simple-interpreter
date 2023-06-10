@@ -1,4 +1,4 @@
-use crate::ast::node::*;
+use crate::ast::node::Node;
 use crate::lexer::Token::*;
 use crate::lexer::{Lexer, Token};
 
@@ -17,9 +17,11 @@ impl Parser {
             cur_token: t,
         }
     }
+
     fn get_current_token(&self) -> Token {
         return self.cur_token.clone();
     }
+
     fn consume(&mut self, tt: &Token) {
         let cur_token = self.get_current_token();
         if cur_token == *tt {
@@ -28,6 +30,7 @@ impl Parser {
             panic!("Unexpected token, expected {}, got {}", tt, cur_token);
         }
     }
+
     fn factor(&mut self) -> Box<Node> {
         let ct = self.get_current_token();
         return match ct {
@@ -35,9 +38,13 @@ impl Parser {
                 self.consume(&ct);
                 Box::new(Node::UnaryOp(ct, self.factor()))
             }
-            IntConst(_) => {
+            IntConst(ref val) => {
                 self.consume(&ct);
-                Box::new(Node::Num(get_int(ct)))
+                Box::new(Node::Num(get_int(val)))
+            }
+            RealConst(ref val) => {
+                self.consume(&ct);
+                Box::new(Node::Real(get_real(val)))
             }
             LParan => {
                 self.consume(&LParan);
@@ -48,10 +55,11 @@ impl Parser {
             _ => self.variable(),
         };
     }
+
     fn term(&mut self) -> Box<Node> {
         let mut node = self.factor();
         let mut cur = self.get_current_token();
-        while cur == Multi || cur == Div {
+        while cur == Multi || cur == Div || cur == FloatDiv {
             self.consume(&cur);
             let v = self.factor();
             node = Box::new(Node::BinOp(node, cur, v));
@@ -59,6 +67,7 @@ impl Parser {
         }
         node
     }
+
     fn expr(&mut self) -> Box<Node> {
         let mut node = self.term();
         let mut cur = self.get_current_token();
@@ -70,17 +79,91 @@ impl Parser {
         }
         return node;
     }
-    fn program(&mut self) -> Box<Node> {
-        let node = self.compound_statement();
-        self.consume(&Dot);
-        return node;
+
+    fn block(&mut self) -> Box<Node> {
+        let decl_nodes = self.declarations();
+        let compound_statement_node = self.compound_statement();
+        Box::new(Node::Block(decl_nodes, compound_statement_node))
     }
+
+    fn declarations(&mut self) -> Vec<Box<Node>> {
+        let mut decls = vec![];
+        if self.get_current_token() == Var {
+            self.consume(&Var);
+            while let ID(_) = self.get_current_token() {
+                let var_decl = self.variable_declaration();
+                decls.extend(var_decl);
+                self.consume(&Semi);
+            }
+        }
+        decls
+    }
+
+    fn variable_declaration(&mut self) -> Vec<Box<Node>> {
+        let mut var_nodes = vec![];
+        let cur_token = self.get_current_token();
+        if let ID(_) = cur_token {
+            self.consume(&cur_token);
+            var_nodes.push(cur_token);
+        } else {
+            return vec![];
+        }
+
+        while Comma == self.get_current_token() {
+            self.consume(&Comma);
+            let cur_token = self.get_current_token();
+            if let ID(_) = cur_token {
+                self.consume(&cur_token);
+                var_nodes.push(cur_token);
+            } else {
+                panic!("Unexpected token, want ID, got {}", cur_token);
+            }
+        }
+
+        self.consume(&Colon);
+        let type_spec = self.type_spec();
+
+        let mut result = vec![];
+        for t in var_nodes {
+            result.push(Box::new(Node::VarDecl(t, type_spec.clone())));
+        }
+        return result;
+    }
+
+    fn type_spec(&mut self) -> Token {
+        let cur_token = self.get_current_token();
+        if cur_token == Integer {
+            self.consume(&Integer);
+        } else if cur_token == Real {
+            self.consume(&Real);
+        } else {
+            panic!("Unexpected token, want type spec, got {}", cur_token);
+        }
+        return cur_token;
+    }
+
+    fn program(&mut self) -> Box<Node> {
+        self.consume(&Program);
+        let program_name: String;
+        if let Node::Var(ID(name)) = *self.variable() {
+            program_name = name;
+        } else {
+            panic!("Cannot get program name");
+        }
+        self.consume(&Semi);
+
+        let block = self.block();
+        self.consume(&Dot);
+        return Box::new(Node::Program(program_name, block));
+    }
+
     fn compound_statement(&mut self) -> Box<Node> {
         self.consume(&Begin);
         let nodes = self.statement_list();
         self.consume(&End);
         Box::new(Node::Compound(nodes))
     }
+
     fn statement_list(&mut self) -> Vec<Box<Node>> {
         let node = self.statement();
         let mut results = vec![node];
@@ -93,6 +176,7 @@ impl Parser {
         }
         return results;
     }
+
     fn statement(&mut self) -> Box<Node> {
         return match self.get_current_token() {
             Begin => self.compound_statement(),
@@ -100,12 +184,14 @@ impl Parser {
             _ => self.empty(),
         };
     }
+
     fn assignment_statement(&mut self) -> Box<Node> {
         let left = self.variable();
         self.consume(&Assign);
         let right = self.expr();
         Box::new(Node::Assign(left, Assign, right))
     }
+
     fn variable(&mut self) -> Box<Node> {
         let cur_token = self.get_current_token();
         return match cur_token {
@@ -116,6 +202,7 @@ impl Parser {
             _ => panic!("Unexpected token, want ID, got {}", cur_token),
         };
     }
+
     fn empty(&mut self) -> Box<Node> {
         return Box::new(Node::NoOp);
     }
@@ -130,11 +217,12 @@ impl Parser {
     }
 }
 
-fn get_int(t: Token) -> i32 {
-    match t {
-        IntConst(digit) => digit.parse().unwrap(),
-        unknown => panic!("Unexpected token, want integer, got {}", unknown),
-    }
+fn get_int(v: &String) -> i32 {
+    v.parse().unwrap()
+}
+
+fn get_real(v: &String) -> f32 {
+    v.parse().unwrap()
 }
 
 #[cfg(test)]
@@ -193,14 +281,14 @@ BEGIN
     BEGIN
         number := 2;
         a := number;
-        b := 10 * a + 10 * number / 4;
+        b := 10 * a + 10 * number DIV 4;
         c := a - - b
     END;
     x := 11;
 END.
         "#;
         let mut p = Parser::new(text.into());
-        let actual = p.parse();
+        let actual = p.compound_statement();
         let expected = Box::new(Node::Compound(vec![
             Box::new(Node::Compound(vec![
                 Box::new(Node::Assign(
