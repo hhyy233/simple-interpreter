@@ -37,6 +37,10 @@ impl Visit for Visitor {
         Nil
     }
 
+    fn visit_procedure_decl(&mut self, name: String, block: Box<Node>) -> Number {
+        Nil
+    }
+
     fn visit_binop(&mut self, l: Box<Node>, op: Token, r: Box<Node>) -> Number {
         let left = self.visit(l);
         let right = self.visit(r);

@@ -63,6 +63,10 @@ impl Visit for SymbolTableBuilder {
         Nil
     }
 
+    fn visit_procedure_decl(&mut self, _name: String, _block: Box<Node>) -> Number {
+        Nil
+    }
+
     fn visit_assign(&mut self, lhs: Box<Node>, _: Token, rhs: Box<Node>) -> Number {
         self.visit(lhs);
         self.visit(rhs);

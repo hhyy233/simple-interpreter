@@ -6,6 +6,7 @@ pub enum Node {
     Program(String, Box<Node>),       // variable name, blocks
     Block(Vec<Box<Node>>, Box<Node>), // declarations, compound statement
     VarDecl(Token, Token),            // variable, type token
+    ProcedureDecl(String, Box<Node>), // procedure name + block node
     Num(i32),
     Real(f32),
     BinOp(Box<Node>, Token, Box<Node>),

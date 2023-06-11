@@ -4,6 +4,7 @@ use std::fmt::Display;
 pub enum Token {
     Program,
     Var,
+    Procedure,
     Begin,
     End,
     Start,

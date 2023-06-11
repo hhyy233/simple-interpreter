@@ -96,6 +96,17 @@ impl Parser {
                 self.consume(&Semi);
             }
         }
+        while self.get_current_token() == Procedure {
+            self.consume(&Procedure);
+            let cur_token = self.get_current_token();
+            let name = get_id(&cur_token);
+            self.consume(&cur_token);
+            self.consume(&Semi);
+            let block_node = self.block();
+            let proc_decl = Node::ProcedureDecl(name, block_node);
+            decls.push(Box::new(proc_decl));
+            self.consume(&Semi);
+        }
         decls
     }
 
@@ -223,6 +234,14 @@ fn get_int(v: &String) -> i32 {
 
 fn get_real(v: &String) -> f32 {
     v.parse().unwrap()
+}
+
+fn get_id(t: &Token) -> String {
+    if let ID(name) = t {
+        return name.clone();
+    } else {
+        panic!("Unexpected token, want ID, got {}", t)
+    }
 }
 
 #[cfg(test)]

@@ -8,6 +8,7 @@ const RADIX: u32 = 10;
 static RESERVED_KEYWORDS: phf::Map<&'static str, Token> = phf_map! {
     "PROGRAM" => Program,
     "VAR" => Var,
+    "PROCEDURE" => Procedure,
     "INTEGER" => Integer,
     "REAL" => Real,
     "DIV" => Div,
