@@ -3,6 +3,7 @@ use super::result::Number::{self, *};
 use super::Visit;
 use crate::lexer::Token;
 use crate::symbol::symbol::*;
+use crate::utils::*;
 
 pub struct SymbolTableBuilder {
     symtab: SymbolTable,
@@ -50,15 +51,15 @@ impl Visit for SymbolTableBuilder {
     }
 
     fn visit_var_decl(&mut self, var_name: Token, type_spec: Token) -> Number {
-        let built_in_type = match self.symtab.lookup(type_spec.to_string()) {
+        let built_in_type = match self.symtab.lookup(&type_spec.to_string()) {
             Symbol::BuiltInSymbol(x) => x,
             unknown => panic!("Unexpected symbol, want Built-in type, got {}", unknown),
         };
-        let var_symbol = if let Token::ID(name) = var_name {
-            Symbol::VarSymbol(name, built_in_type)
-        } else {
-            panic!("Unexpected variable name {}", var_name)
-        };
+        let name = get_id(&var_name);
+        if self.symtab.contains(&name) {
+            panic!("Duplicate id found {}", name)
+        }
+        let var_symbol = Symbol::VarSymbol(name, built_in_type);
         self.symtab.define(var_symbol);
         Nil
     }
@@ -75,7 +76,7 @@ impl Visit for SymbolTableBuilder {
 
     fn visit_var(&mut self, id: Token) -> Number {
         if let Token::ID(name) = id {
-            self.symtab.lookup(name);
+            self.symtab.lookup(&name);
         } else {
             panic!("Unexpected token, want ID, got {}", id)
         }
@@ -103,7 +104,7 @@ END.
         let tree = p.parse();
         let mut s = SymbolTableBuilder::new();
         s.visit(tree);
-        let type_spec = s.symtab.lookup("a".into());
+        let type_spec = s.symtab.lookup(&"a".into());
         assert_eq!(
             type_spec,
             Symbol::VarSymbol("a".into(), BuiltIn::new(Token::Integer))

@@ -1,6 +1,7 @@
 use crate::ast::node::Node;
 use crate::lexer::Token::*;
 use crate::lexer::{Lexer, Token};
+use crate::utils::*;
 
 #[derive(Debug)]
 pub struct Parser {
@@ -225,22 +226,6 @@ impl Parser {
             panic!("Unexpected token at the end of file, got {}", ct)
         }
         return res;
-    }
-}
-
-fn get_int(v: &String) -> i32 {
-    v.parse().unwrap()
-}
-
-fn get_real(v: &String) -> f32 {
-    v.parse().unwrap()
-}
-
-fn get_id(t: &Token) -> String {
-    if let ID(name) = t {
-        return name.clone();
-    } else {
-        panic!("Unexpected token, want ID, got {}", t)
     }
 }
 

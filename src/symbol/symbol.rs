@@ -60,10 +60,17 @@ impl SymbolTable {
         };
     }
 
-    pub fn lookup(&mut self, name: String) -> Symbol {
-        match self.symbols.get(&name) {
+    pub fn lookup(&mut self, name: &String) -> Symbol {
+        match self.symbols.get(name) {
             Some(s) => s.clone(),
             None => panic!("Symbol not found {}", name),
+        }
+    }
+
+    pub fn contains(&mut self, name: &String) -> bool {
+        match self.symbols.get(name) {
+            Some(_) => true,
+            None => false,
         }
     }
 }
