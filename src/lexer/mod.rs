@@ -92,7 +92,7 @@ impl Lexer {
             self.advance();
         }
         RESERVED_KEYWORDS
-            .get(id.as_str())
+            .get(id.to_uppercase().clone().as_str())
             .cloned()
             .unwrap_or(ID(id))
     }

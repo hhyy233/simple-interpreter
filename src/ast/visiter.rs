@@ -37,7 +37,12 @@ impl Visit for Visitor {
         Nil
     }
 
-    fn visit_procedure_decl(&mut self, name: String, block: Box<Node>) -> Number {
+    fn visit_procedure_decl(
+        &mut self,
+        name: String,
+        params: Vec<Box<Node>>,
+        block: Box<Node>,
+    ) -> Number {
         Nil
     }
 

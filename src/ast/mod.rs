@@ -14,7 +14,10 @@ pub trait Visit {
             Program(name, block) => self.visit_program(name, block),
             Block(var_decls, states) => self.visit_block(var_decls, states),
             VarDecl(var_name, var_type) => self.visit_var_decl(var_name, var_type),
-            ProcedureDecl(name, block_node) => self.visit_procedure_decl(name, block_node),
+            ProcedureDecl(name, params, block_node) => {
+                self.visit_procedure_decl(name, params, block_node)
+            }
+            // Param(var_name, type_spec) => self.visit_params(var_name, type_spec),
             Num(val) => Number::Int(val),
             Node::Real(val) => Number::Real(val),
             BinOp(lhs, op, rhs) => self.visit_binop(lhs, op, rhs),
@@ -23,12 +26,19 @@ pub trait Visit {
             Node::Assign(lhs, op, rhs) => self.visit_assign(lhs, op, rhs),
             Var(id) => self.visit_var(id),
             NoOp => self.visit_noop(),
+            _ => todo!(),
         }
     }
     fn visit_program(&mut self, name: String, block: Box<Node>) -> Number;
     fn visit_block(&mut self, var_decls: Vec<Box<Node>>, states: Box<Node>) -> Number;
     fn visit_var_decl(&mut self, var_name: Token, type_spec: Token) -> Number;
-    fn visit_procedure_decl(&mut self, name: String, block: Box<Node>) -> Number;
+    fn visit_procedure_decl(
+        &mut self,
+        name: String,
+        params: Vec<Box<Node>>,
+        block: Box<Node>,
+    ) -> Number;
+    // fn visit_params(&mut self, var_name: Token, type_spec: Token) -> Number;
     fn visit_binop(&mut self, l: Box<Node>, op: Token, r: Box<Node>) -> Number;
     fn visit_unaryop(&mut self, op: Token, rhs: Box<Node>) -> Number;
     fn visit_compound(&mut self, nodes: Vec<Box<Node>>) -> Number;

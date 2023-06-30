@@ -3,10 +3,11 @@ use std::fmt::Display;
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Node {
-    Program(String, Box<Node>),       // variable name, blocks
-    Block(Vec<Box<Node>>, Box<Node>), // declarations, compound statement
-    VarDecl(Token, Token),            // variable, type token
-    ProcedureDecl(String, Box<Node>), // procedure name + block node
+    Program(String, Box<Node>),                       // variable name, blocks
+    Block(Vec<Box<Node>>, Box<Node>),                 // declarations, compound statement
+    VarDecl(Token, Token),                            // variable, type token
+    ProcedureDecl(String, Vec<Box<Node>>, Box<Node>), // procedure name + parameters + block node
+    Param(Token, Token),                              // variable + type
     Num(i32),
     Real(f32),
     BinOp(Box<Node>, Token, Box<Node>),

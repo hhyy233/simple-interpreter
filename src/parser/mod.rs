@@ -82,33 +82,71 @@ impl Parser {
     }
 
     fn block(&mut self) -> Box<Node> {
+        /* block : declarations compound_statement */
         let decl_nodes = self.declarations();
         let compound_statement_node = self.compound_statement();
         Box::new(Node::Block(decl_nodes, compound_statement_node))
     }
 
     fn declarations(&mut self) -> Vec<Box<Node>> {
+        /*
+        declarations : (VAR (variable_declaration SEMI)+)*
+                    | (PROCEDURE ID (LPAREN formal_parameter_list RPAREN)? SEMI block SEMI)*
+                    | empty
+        */
         let mut decls = vec![];
-        if self.get_current_token() == Var {
-            self.consume(&Var);
-            while let ID(_) = self.get_current_token() {
-                let var_decl = self.variable_declaration();
-                decls.extend(var_decl);
+        loop {
+            if self.get_current_token() == Var {
+                self.consume(&Var);
+                while let ID(_) = self.get_current_token() {
+                    let var_decl = self.variable_declaration();
+                    decls.extend(var_decl);
+                    self.consume(&Semi);
+                }
+            } else if self.get_current_token() == Procedure {
+                self.consume(&Procedure);
+                let cur_token = self.get_current_token();
+                let name = get_id(&cur_token);
+                self.consume(&cur_token);
+
+                // procedure parameters
+                self.consume(&LParan);
+                let params = self.formal_parameter_list();
+                self.consume(&RParan);
                 self.consume(&Semi);
+
+                let block_node = self.block();
+                let proc_decl = Node::ProcedureDecl(name, params, block_node);
+                decls.push(Box::new(proc_decl));
+                self.consume(&Semi);
+            } else {
+                break;
             }
         }
-        while self.get_current_token() == Procedure {
-            self.consume(&Procedure);
-            let cur_token = self.get_current_token();
-            let name = get_id(&cur_token);
-            self.consume(&cur_token);
-            self.consume(&Semi);
-            let block_node = self.block();
-            let proc_decl = Node::ProcedureDecl(name, block_node);
-            decls.push(Box::new(proc_decl));
-            self.consume(&Semi);
-        }
         decls
+    }
+
+    fn formal_parameter_list(&mut self) -> Vec<Box<Node>> {
+        /*
+        formal_parameter_list : formal_parameters
+                              | formal_parameters SEMI formal_parameter_list
+         */
+        let mut params = vec![];
+        if let ID(_) = self.get_current_token() {
+            params.extend(self.formal_parameters());
+        } else {
+            return params;
+        }
+        while self.get_current_token() == Semi {
+            self.consume(&Semi);
+            params.extend(self.formal_parameters());
+        }
+        return params;
+    }
+
+    fn formal_parameters(&mut self) -> Vec<Box<Node>> {
+        /* formal_parameters : ID (COMMA ID)* COLON type_spec */
+        return self.variable_declaration();
     }
 
     fn variable_declaration(&mut self) -> Vec<Box<Node>> {
@@ -231,6 +269,8 @@ impl Parser {
 
 #[cfg(test)]
 mod test {
+    use crate::symbol::symbol::BuiltIn;
+
     use super::*;
 
     #[test]
@@ -343,6 +383,48 @@ END.
             )),
             Box::new(Node::NoOp),
         ]));
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn test_procedure() {
+        let text = r#"
+procedure Alpha(a, b : integer; c : real);
+    var y : integer;
+begin
+    x := a + x + y;
+end;
+        "#;
+        let mut p = Parser::new(text.into());
+        let actual = p.declarations();
+        println!("{:?}", actual);
+        let expected = vec![Box::new(Node::ProcedureDecl(
+            "Alpha".into(),
+            vec![
+                Box::new(Node::VarDecl(ID("a".into()), Token::Integer)),
+                Box::new(Node::VarDecl(ID("b".into()), Token::Integer)),
+                Box::new(Node::VarDecl(ID("c".into()), Token::Real)),
+            ],
+            Box::new(Node::Block(
+                vec![Box::new(Node::VarDecl(ID("y".into()), Token::Integer))],
+                Box::new(Node::Compound(vec![
+                    Box::new(Node::Assign(
+                        Box::new(Node::Var(Token::ID("x".into()))),
+                        Token::Assign,
+                        Box::new(Node::BinOp(
+                            Box::new(Node::BinOp(
+                                Box::new(Node::Var(Token::ID("a".into()))),
+                                Plus,
+                                Box::new(Node::Var(Token::ID("x".into()))),
+                            )),
+                            Plus,
+                            Box::new(Node::Var(Token::ID("y".into()))),
+                        )),
+                    )),
+                    Box::new(Node::NoOp),
+                ])),
+            )),
+        ))];
         assert_eq!(expected, actual);
     }
 }
